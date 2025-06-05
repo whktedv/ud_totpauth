@@ -1,0 +1,20 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Ud\UdTotpauth\:
+    resource: '../Classes/*'
+
+  Ud\UdTotpauth\Service\TotpService:
+    public: true
+   
+  Ud\UdTotpauth\Service\EmailAuthService:
+    public: true
+  
+  Ud\UdTotpauth\EventListener\AuthEventListener:
+    tags:
+      - name: event.listener
+        identifier: 'login_confirmed_listener'
+        event: TYPO3\CMS\FrontendLogin\Event\LoginConfirmedEvent

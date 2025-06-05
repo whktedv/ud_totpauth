@@ -1,0 +1,14 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="content">
+	<h2>Status der 2FA</h2>
+	<f:flashMessages />
+    <f:form action="showQrCode" controller="Authentication" method="post">
+            <f:form.hidden name="userId" value="{userId}" />                     
+            <div class="form-group">
+                <f:form.button value="2FA per Code aktivieren" class="btn btn-primary">2FA per Code aktivieren</f:form.button>
+            </div>
+    </f:form>
+</f:section>
+</html>

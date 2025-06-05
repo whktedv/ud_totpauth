@@ -1,0 +1,29 @@
+plugin.tx_udtotpauth_totpsetup {
+    settings {
+
+    	# cat=plugin.tx_udtotpauth_totpsetup/links/0010; type=int+; label=TOTP Verification Page ID
+        verifyPageId = 0
+        
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0020; type=int+; label=Email Waiting Page ID
+        emailWaitPageId = 0
+        
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0030; type=int+; label=Email Verification Page ID
+        emailVerifyPageId = 0
+
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0040; type=string+; label=Email Verification Sender Mail address
+        emailVerifySender = no-reply@whkt.de
+
+		# cat=plugin.tx_udtotpauth_totpsetup/links/0050; type=string+; label=Email Verification Sender Name
+        emailVerifyName = WHKT
+
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0060; type=int+; label=Login Seite der Anwendung
+        loginPageId = 0
+
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0070; type=string+; label=Name der Anwendung
+        applicationName = 
+        
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0060; type=boolean+; label=TOTP-Extension ist verpflichtend aktiviert
+        enabled = 1
+    }
+   
+}

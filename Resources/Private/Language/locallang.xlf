@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="messages" date="2023-11-01T10:00:00Z">
+        <header/>
+        <body>
+            <trans-unit id="tx_udtotpauth_domain_model_totpsecret">
+                <source>TOTP Secret</source>
+            </trans-unit>
+            <trans-unit id="tx_udtotpauth_domain_model_totpsecret.fe_user">
+                <source>Frontend User</source>
+            </trans-unit>
+            <trans-unit id="tx_udtotpauth_domain_model_totpsecret.secret">
+                <source>Secret Key</source>
+            </trans-unit>
+            <trans-unit id="tx_udtotpauth_domain_model_totpsecret.is_active">
+                <source>Active</source>
+            </trans-unit>
+            <trans-unit id="tx_udtotpauth_domain_model_totpsecret.last_used_at">
+                <source>Last Used At</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

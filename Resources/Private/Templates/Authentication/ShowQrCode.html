@@ -1,0 +1,32 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="content">
+    <h2>Zwei-Faktor-Authentifizierung einrichten</h2>
+    <f:flashMessages />
+    <div class="totp-setup">
+        <p>Bitte diesen QR-Code mit der Authenticator App deiner Wahl scannen (Google Authenticator, Microsoft Authenticator, Authy, etc.):</p>
+        
+        <div class="qr-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={qrCodeUrl}" 
+                 alt="QR Code for TOTP" />
+        </div>
+        
+        <p>Sollte ein Scan des QR-Codes nicht möglich sein, diesen Code manuell eingeben: <code>{secret}</code></p>
+        
+        <f:form action="storeSecret" controller="Authentication" method="post">
+            <f:form.hidden name="secret" value="{secret}" />
+            
+            <div class="form-group">
+                <label for="verification-code">Den Verifizierungscode aus der App hier eingeben:</label>
+                <f:form.textfield id="verification-code" name="verificationCode" class="form-control" />
+            </div>
+            <br>
+            <div class="form-group">
+                <f:form.submit value="Bestätigen und Aktivieren" class="btn btn-primary" />
+            </div>
+        </f:form>
+        
+    </div>
+</f:section>
+</html>

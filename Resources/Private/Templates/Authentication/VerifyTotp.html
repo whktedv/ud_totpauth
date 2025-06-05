@@ -1,0 +1,32 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="content">
+    <h2>Zwei-Faktor-Authentifizierung</h2>
+    <f:flashMessages />
+    <div class="totp-verify">
+        <p>Bitte den Code aus der Authenticator App eingeben:</p>
+        
+        <f:form action="verifyTotp" controller="Authentication" method="post">
+            <f:form.hidden name="userId" value="{userId}" />
+            
+            <div class="form-group">
+                <label for="totp-code">Verifizierungscode:</label>
+                <f:form.textfield id="totp-code" name="totpCode" class="form-control" />
+            </div>
+            <br>
+            <div class="form-group">
+                <f:form.submit value="Bestätigen" class="btn btn-primary" />
+            </div>
+        </f:form>
+    </div>
+    
+    <h2>App nicht verfügbar?</h2>
+    <f:form action="switchtomail" controller="Authentication" method="post">
+            <f:form.hidden name="userId" value="{userId}" />                     
+            <div class="form-group">
+                <f:form.button value="2FA per E-Mail aktivieren" class="btn btn-primary">2FA per E-Mail aktivieren und neu anmelden</f:form.button>
+            </div>
+    </f:form>
+</f:section>
+</html>
