@@ -8,6 +8,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
+use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 
 class EmailAuthService
 {
@@ -62,6 +63,11 @@ class EmailAuthService
                 ['fe_user' => $userId]
             );
         } else {
+            // alte Tokens für den User löschen
+            $connection->delete(
+                'tx_udtotpauth_domain_model_emailtoken',
+                ['fe_user' => $userId]
+            );
             // Neuen Token erstellen
             $tokenData['fe_user'] = $userId;
             $tokenData['crdate'] = time();
@@ -88,7 +94,7 @@ class EmailAuthService
         $connection = $this->connectionPool->getConnectionForTable('tx_udtotpauth_domain_model_emailtoken');
         
         $tokenRecord = $connection->select(
-            ['token', 'valid_until'],
+            ['token', 'valid_until', 'linkused'],
             'tx_udtotpauth_domain_model_emailtoken',
             [
                 'fe_user' => $userId,
@@ -96,6 +102,7 @@ class EmailAuthService
             ]
         )->fetchAssociative();
         
+
         if (!$tokenRecord) {
             return false;
         }
@@ -105,11 +112,28 @@ class EmailAuthService
             return false;
         }
         
-        // Token löschen nach erfolgreicher Validierung
-        $connection->delete(
-            'tx_udtotpauth_domain_model_emailtoken',
-            ['fe_user' => $userId]
-        );
+        // Token löschen nach erfolgreicher Validierung. Es darf zweimal validiert werden, 
+        // damit Mailfilter auch einmal klicken "dürfen", ohne dass der User danach ausgesperrt bleibt
+        $linkusedtimes = (int)$tokenRecord['linkused'];
+        if($linkusedtimes > 1) {
+            $connection->delete(
+                'tx_udtotpauth_domain_model_emailtoken',
+                ['fe_user' => $userId]
+            );
+            return false;
+        } else {
+            // Daten für DB
+            $tokenData = [
+                'linkused' => $linkusedtimes + 1,
+                'tstamp' => time()
+            ];
+            // Linkused aktualisieren
+            $connection->update(
+                'tx_udtotpauth_domain_model_emailtoken',
+                $tokenData,
+                ['token' => $token]
+            );
+        }
         
         return true;
     }
@@ -150,13 +174,22 @@ class EmailAuthService
             'verificationurl' => $verifyUrl
         );
         
-        $relativePath = 'EXT:ud_totpauth/Resources/Private/Templates/';
-        $absolutePath = GeneralUtility::getFileAbsFileName($relativePath);
-        $templatePathAndFilename = $absolutePath . 'Mail/Mailtoverify.html';
+        $configurationManager = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Configuration\ConfigurationManager::class);
+        $settings = $configurationManager->getConfiguration(
+            ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK,
+            'UdTotpauth', // Dein Extension-Key
+            'totpsetup'
+            );
+        
+        // Nun kannst du auf die Pfade zugreifen:
+        $templatePaths = $settings['view']['templateRootPaths'] ?? [];
+        // $templatePaths ist jetzt ein Array mit allen gesetzten Pfaden und deren Keys
         
         $emailview = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(StandaloneView::class);
         $emailview->setRequest($extbaseRequest);        
-        $emailview->setTemplatePathAndFilename($templatePathAndFilename);
+        $emailview->setTemplateRootPaths($templatePaths);        
+        //$emailview->setTemplatePathAndFilename($templatePathAndFilename);
+        $emailview->setTemplate('Mail/Mailtoverify.html');
         $emailview->assignMultiple($variables);
         $emailBody = $emailview->render();
         

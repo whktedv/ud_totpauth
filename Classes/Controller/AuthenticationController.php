@@ -203,9 +203,7 @@ class AuthenticationController extends ActionController
         } else {
             $this->addFlashMessage('Zwei-Faktor-Authentifizierung ist schon per Code eingerichtet.', '', \TYPO3\CMS\Core\Messaging\AbstractMessage::WARNING);
         }
-        
-        //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($existingSecret != NULL);
-        
+                
         $this->view->assign('isexistingsecret', $existingSecret != NULL);
         $this->view->assign('userId', $userId);
         return $this->htmlResponse();
@@ -232,6 +230,7 @@ class AuthenticationController extends ActionController
     {   
         // Sicherheitsprüfung: Benutzer-ID aus Session mit Parameter abgleichen
         $currentUserId = (int)($GLOBALS['TSFE']->fe_user->user['uid'] ?? 0);       
+        $valid = true;
         
         if ($user === 0 || ($currentUserId > 0 && $currentUserId !== $user)) {
             $this->addFlashMessage(
@@ -239,12 +238,12 @@ class AuthenticationController extends ActionController
                 '',
                 \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
                 );
-            $this->redirect('login', 'Login', 'felogin');            
+            
+            $valid = false;
         }
 
         // E-Mail-Token validieren
         $isValid = $this->emailAuthService->validateToken($user, $token);
-        
         
         if (!$isValid) {
             $this->addFlashMessage(
@@ -252,20 +251,24 @@ class AuthenticationController extends ActionController
                 '',
                 \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
                 );
-            
+
             // Session löschen und zur Login-Seite umleiten
             $GLOBALS['TSFE']->fe_user->logoff();
-            $this->redirect('login', 'Login', 'felogin');            
+            $valid = false;
         }
-
-        $this->logUserIn($user);
-                
-        session_start();
-        $loginurl = $_SESSION['original_url'] ?? $this->uriBuilder->reset()
-        ->setTargetPageUid($this->settings['loginPageId'])
-        ->build();
         
-        return $this->redirectToUri($loginurl);
+        if($valid) {
+            $this->logUserIn($user);
+            
+            session_start();
+            $loginurl = $_SESSION['original_url'] ?? $this->uriBuilder->reset()
+            ->setTargetPageUid($this->settings['loginPageId'])
+            ->build();
+        }
+        
+        $this->view->assign('valid', $valid);
+        $this->view->assign('redirecturl', $loginurl ?? '0');
+        return $this->htmlResponse();
     }
     
     
@@ -284,7 +287,6 @@ class AuthenticationController extends ActionController
         return $this->redirectToUri($uri, 0, 303);
     }
     
-   
     protected function logUserIn(int $userId): void
     {
         // Benutzerdaten aus der Datenbank abrufen

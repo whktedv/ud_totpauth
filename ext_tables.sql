@@ -24,6 +24,7 @@ CREATE TABLE tx_udtotpauth_domain_model_emailtoken (
     fe_user int(11) unsigned DEFAULT '0' NOT NULL,
     token varchar(64) DEFAULT '' NOT NULL,
     valid_until int(11) DEFAULT '0' NOT NULL,
+    linkused int(11) DEFAULT '0' NOT NULL,
     
     tstamp int(11) unsigned DEFAULT '0' NOT NULL,
     crdate int(11) unsigned DEFAULT '0' NOT NULL,

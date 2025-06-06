@@ -1,6 +1,5 @@
 plugin.tx_udtotpauth_totpsetup {
     settings {
-
     	# cat=plugin.tx_udtotpauth_totpsetup/links/0010; type=int+; label=TOTP Verification Page ID
         verifyPageId = 0
         
@@ -23,7 +22,7 @@ plugin.tx_udtotpauth_totpsetup {
         applicationName = 
         
         # cat=plugin.tx_udtotpauth_totpsetup/links/0060; type=boolean+; label=TOTP-Extension ist verpflichtend aktiviert
-        enabled = 1
+        mandatory = 1
     }
    
 }

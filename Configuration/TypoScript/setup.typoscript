@@ -2,7 +2,6 @@ plugin.tx_udtotpauth_totpsetup {
     view {
         templateRootPaths.0 = EXT:ud_totpauth/Resources/Private/Templates/
         layoutRootPaths.0 = EXT:ud_totpauth/Resources/Private/Layouts/
-        partialRootPaths.0 = EXT:ud_totpauth/Resources/Private/Partials/
     }
     persistence {
         storagePid = {$plugin.tx_udtotpauth_totpsetup.persistence.storagePid}
@@ -16,7 +15,7 @@ plugin.tx_udtotpauth_totpsetup {
         emailVerifyName = {$plugin.tx_udtotpauth_totpsetup.settings.emailVerifyName}
         loginPageId = {$plugin.tx_udtotpauth_totpsetup.settings.loginPageId}
         applicationName = {$plugin.tx_udtotpauth_totpsetup.settings.applicationName}
-        enabled = {$plugin.tx_udtotpauth_totpsetup.settings.enabled}
+        mandatory = {$plugin.tx_udtotpauth_totpsetup.settings.mandatory}
     }
 }
 

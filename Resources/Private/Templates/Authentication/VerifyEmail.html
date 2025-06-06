@@ -4,21 +4,21 @@
 <f:section name="content">
     <div class="email-verification-process">
         <h2>E-Mail-Bestätigung</h2>
-        
         <div class="verification-status">
             <f:if condition="{valid}">
                 <f:then>
                     <div class="alert alert-success">
                         <p>Deine E-Mail-Adresse wurde erfolgreich bestätigt!</p>
                         <p>Du wirst automatisch weitergeleitet...</p>
-                    </div>
+                    </div>                   
+
+					<script>
+						var redirectUrl = '{redirecturl}';
+					    setTimeout(function() {
+					        window.location.href = redirectUrl;
+					    }, 3000);
+					</script>
                     
-                    <script>
-                        // Automatische Weiterleitung nach 3 Sekunden
-                        setTimeout(function() {
-                            window.location.href = '{redirectUrl}';
-                        }, 3000);
-                    </script>
                 </f:then>
                 <f:else>
                     <div class="alert alert-danger">
