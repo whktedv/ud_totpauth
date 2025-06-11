@@ -131,7 +131,7 @@ final class AuthEventListener
                     header('Location: ' . $url);
                     exit;
                 }
-            } elseif($totpmandatory) {
+            } elseif($totpmandatory && $frontendUser['tx_udtotpauth_disable2fa'] == 0) {
                 // TOTP nicht eingerichtet, E-Mail-Bestätigung starten            
                 $token = $emailService->generateEmailToken($userId);
                 

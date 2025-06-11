@@ -188,10 +188,9 @@ class AuthenticationController extends ActionController
      */
     public function alreadyactiveAction(): ResponseInterface
     {     
-        //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($this->request->getArguments());
-        
         $change2fa = $this->request->hasArgument('change') ? $this->request->getArgument('change') : 0;
         $userId = $this->request->getArgument('userId');
+        $existingSecret = NULL;
         
         if($change2fa == 1) {
             $existingSecret = $this->totpSecretRepository->findActiveByFeUserId($userId);

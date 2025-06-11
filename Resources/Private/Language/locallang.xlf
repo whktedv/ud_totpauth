@@ -18,6 +18,9 @@
             <trans-unit id="tx_udtotpauth_domain_model_totpsecret.last_used_at">
                 <source>Last Used At</source>
             </trans-unit>
+            <trans-unit id="fe_users.udtotpauth_disable2fa">
+                <source>Disable Two-Factor Authentication</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

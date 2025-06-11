@@ -35,3 +35,7 @@ CREATE TABLE tx_udtotpauth_domain_model_emailtoken (
     KEY fe_user (fe_user),
     UNIQUE KEY token_idx (token)
 );
+
+CREATE TABLE fe_users (
+    tx_udtotpauth_disable2fa tinyint(1) DEFAULT '0' NOT NULL
+);
