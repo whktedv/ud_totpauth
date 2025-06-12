@@ -83,6 +83,9 @@ class AuthenticationController extends ActionController
                 
                 $this->view->assign('secret', $secret);
                 $this->view->assign('qrCodeUrl', $qrCodeUrl);
+                //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($this->htmlResponse());
+                //die;
+                
                 return $this->htmlResponse();
             } else {
                 return $this->redirectToUri('/');

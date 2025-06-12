@@ -112,10 +112,10 @@ class EmailAuthService
             return false;
         }
         
-        // Token löschen nach erfolgreicher Validierung. Es darf zweimal validiert werden, 
-        // damit Mailfilter auch einmal klicken "dürfen", ohne dass der User danach ausgesperrt bleibt
+        // Token löschen nach erfolgreicher Validierung. Es darf drei mal validiert werden, 
+        // damit Mailfilter auch klicken "dürfen", ohne dass der User danach ausgesperrt bleibt
         $linkusedtimes = (int)$tokenRecord['linkused'];
-        if($linkusedtimes > 1) {
+        if($linkusedtimes > 2) {
             $connection->delete(
                 'tx_udtotpauth_domain_model_emailtoken',
                 ['fe_user' => $userId]
@@ -154,7 +154,7 @@ class EmailAuthService
         
         // Bestätigungs-URL generieren
         $verifyUrl = $this->generateVerificationUrl($token, $user['uid'], $pageUid);
-
+        
         // E-Mail vorbereiten
         /** @var MailMessage $mail */
         $mail = GeneralUtility::makeInstance(MailMessage::class);
