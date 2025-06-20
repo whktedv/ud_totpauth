@@ -146,7 +146,7 @@ class EmailAuthService
      * @param int $pageUid ID der Bestätigungsseite
      * @return bool
      */
-    public function sendVerificationEmail(array $user, string $token, int $pageUid, string $emailVerifySender, string $emailVerifyName, string $applicationName, $extbaseRequest): bool
+    public function sendVerificationEmail(array $user, string $token, int $validtime, int $pageUid, string $emailVerifySender, string $emailVerifyName, string $applicationName, $extbaseRequest): bool
     {       
         if (empty($user['email'])) {
             return false;
@@ -171,7 +171,8 @@ class EmailAuthService
             'lastname' => $user['last_name'],
             'company' => $user['company'],
             'applicationName' => $applicationName,
-            'verificationurl' => $verifyUrl
+            'verificationurl' => $verifyUrl,
+            'waittime' => $validtime
         );
         
         $configurationManager = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Configuration\ConfigurationManager::class);

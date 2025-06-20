@@ -16,6 +16,7 @@ plugin.tx_udtotpauth_totpsetup {
         loginPageId = {$plugin.tx_udtotpauth_totpsetup.settings.loginPageId}
         applicationName = {$plugin.tx_udtotpauth_totpsetup.settings.applicationName}
         mandatory = {$plugin.tx_udtotpauth_totpsetup.settings.mandatory}
+        emailWaitTime = {$plugin.tx_udtotpauth_totpsetup.settings.emailWaitTime}
     }
 }
 

@@ -43,6 +43,7 @@ final class AuthEventListener
         $emailVerifyName = $settings['emailVerifyName'];
         $applicationName = $settings['applicationName'];
         $totpmandatory = $settings['mandatory'];
+        $validtime = $settings['emailWaitTime'];
         
         
         // redirectPid aus Gruppendatensatz des Users auslesen
@@ -133,11 +134,12 @@ final class AuthEventListener
                 }
             } elseif($totpmandatory && $frontendUser['tx_udtotpauth_disable2fa'] == 0) {
                 // TOTP nicht eingerichtet, E-Mail-Bestätigung starten            
-                $token = $emailService->generateEmailToken($userId);
+                $token = $emailService->generateEmailToken($userId, $validtime);
                 
                 $emailSent = $emailService->sendVerificationEmail(
                     $GLOBALS['TSFE']->fe_user->user,
                     $token,
+                    $validtime,
                     $emailVerifyPageId,
                     $emailVerifySender,
                     $emailVerifyName,

@@ -21,8 +21,11 @@ plugin.tx_udtotpauth_totpsetup {
         # cat=plugin.tx_udtotpauth_totpsetup/links/0070; type=string+; label=Name der Anwendung
         applicationName = 
         
-        # cat=plugin.tx_udtotpauth_totpsetup/links/0060; type=boolean+; label=TOTP-Extension ist verpflichtend aktiviert
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0080; type=boolean+; label=TOTP-Extension ist verpflichtend aktiviert
         mandatory = 1
+        
+        # cat=plugin.tx_udtotpauth_totpsetup/links/0090; type=int+; label=Gültigkeitsdauer E-Mail-Token
+        emailWaitTime = 15
     }
    
 }
