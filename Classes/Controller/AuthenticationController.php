@@ -18,6 +18,8 @@ use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
+
 class AuthenticationController extends ActionController
 {
     /**
@@ -83,8 +85,6 @@ class AuthenticationController extends ActionController
                 
                 $this->view->assign('secret', $secret);
                 $this->view->assign('qrCodeUrl', $qrCodeUrl);
-                //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($this->htmlResponse());
-                //die;
                 
                 return $this->htmlResponse();
             } else {
@@ -243,7 +243,6 @@ class AuthenticationController extends ActionController
             
             $valid = false;
         }
-
         // E-Mail-Token validieren
         $isValid = $this->emailAuthService->validateToken($user, $token);
         

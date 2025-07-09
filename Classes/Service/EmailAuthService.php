@@ -10,6 +10,8 @@ use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
+
 class EmailAuthService
 {
     /**
@@ -52,7 +54,8 @@ class EmailAuthService
         $tokenData = [
             'token' => $token,
             'valid_until' => $validUntil,
-            'tstamp' => time()
+            'tstamp' => time(),
+            'linkused' => 0
         ];
         
         if ($existingToken) {
