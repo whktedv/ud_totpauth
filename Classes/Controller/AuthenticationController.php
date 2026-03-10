@@ -236,9 +236,9 @@ class AuthenticationController extends ActionController
         
         if ($user === 0 || ($currentUserId > 0 && $currentUserId !== $user)) {
             $this->addFlashMessage(
-                'Fehler: Ungültige Anfrage. Bitte melden Sie sich erneut an.',
-                '',
-                \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
+                    'Fehler: Ungültige Anfrage. Bitte melden Sie sich erneut an.',
+                    '',
+                    \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
                 );
             
             $valid = false;
@@ -248,9 +248,9 @@ class AuthenticationController extends ActionController
         
         if (!$isValid) {
             $this->addFlashMessage(
-                'Fehler: Der Bestätigungslink ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.',
-                '',
-                \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
+                    'Fehler: Der Bestätigungslink ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.',
+                    '',
+                    \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
                 );
 
             // Session löschen und zur Login-Seite umleiten
