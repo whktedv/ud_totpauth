@@ -6,7 +6,6 @@ use TYPO3\CMS\FrontendLogin\Event\LoginConfirmedEvent;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Ud\UdTotpauth\Service\TotpService;
 use Ud\UdTotpauth\Service\EmailAuthService;
-use TYPO3\CMS\FrontendLogin\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 
 use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
@@ -26,9 +25,6 @@ final class AuthEventListener
     
     public function __invoke(LoginConfirmedEvent $event): void
     {            
-        //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($redirectPid);
-        //die;
-
         $configurationManager = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Configuration\ConfigurationManager::class);
         $settings = $configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
@@ -45,11 +41,17 @@ final class AuthEventListener
         $totpmandatory = $settings['mandatory'];
         $validtime = $settings['emailWaitTime'];
         
-        
+        /** @var ServerRequestInterface $request */
+        $request = $GLOBALS['TYPO3_REQUEST'];
+
         // redirectPid aus Gruppendatensatz des Users auslesen
-        $frontendUser = $GLOBALS['TSFE']->fe_user->user;
+        //$frontendUser = $GLOBALS['TSFE']->fe_user->user;
+        $frontendUser = $request->getAttribute('frontend.user');
         
-        $groupIds = explode(',', $frontendUser['usergroup']);
+        //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($frontendUser->user);
+        //die;
+
+        $groupIds = explode(',', $frontendUser->user['usergroup']);
         $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('fe_groups');
         $queryBuilder = $connection->createQueryBuilder();
         $groups = $queryBuilder
@@ -63,7 +65,7 @@ final class AuthEventListener
             $redirectPid = (int)$groups[0]['felogin_redirectPid'];
             // Wenn im Gruppendatensatz keine redirectPid gespeichert ist, dann aus dem felogin-Datensatz auslesen
             if($redirectPid == 0){
-                $pageArguments = $this->request->getAttribute('routing');
+                $pageArguments = $request->getAttribute('routing');
                 $pageId = $pageArguments->getPageId();
 
                 $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
@@ -92,13 +94,11 @@ final class AuthEventListener
             }
             
         if($verifyPageId != 0) {
-            $userId = $frontendUser['uid'];
+            $userId = $frontendUser->user['uid'];
                         
             $totpService = GeneralUtility::makeInstance(TotpService::class);
             $emailService = GeneralUtility::makeInstance(EmailAuthService::class);
             
-            /** @var ServerRequestInterface $request */
-            $request = $GLOBALS['TYPO3_REQUEST'];
             $extbaseRequest = new Request(
                 $request->withAttribute('extbase', new ExtbaseRequestParameters())
                 );
@@ -123,20 +123,17 @@ final class AuthEventListener
                 // Wenn eine Seiten-ID konfiguriert ist, leite weiter
                 if ($verifyPageId > 0) {
                     $url = $this->getTypoLinkUrl($verifyPageId, $userId);
-    
-                    /** @var FrontendUserAuthentication $feUser */
-                    $feUser = $GLOBALS['TSFE']->fe_user;
-                    $feUser->logoff();
+                    $frontendUser->logoff();
     
                     header('Location: ' . $url);
                     exit;
                 }
-            } elseif($totpmandatory && $frontendUser['tx_udtotpauth_disable2fa'] == 0) {
+            } elseif($totpmandatory && $frontendUser->user['tx_udtotpauth_disable2fa'] == 0) {
                 // TOTP nicht eingerichtet, E-Mail-Bestätigung starten            
                 $token = $emailService->generateEmailToken($userId, $validtime);
                 
                 $emailSent = $emailService->sendVerificationEmail(
-                    $GLOBALS['TSFE']->fe_user->user,
+                    $frontendUser->user,
                     $token,
                     $validtime,
                     $emailVerifyPageId,
@@ -151,9 +148,7 @@ final class AuthEventListener
                     if (!empty($emailWaitPageId)) {
                         $url = $this->getTypoLinkUrl($emailWaitPageId, $userId);
     
-                        /** @var FrontendUserAuthentication $feUser */
-                        $feUser = $GLOBALS['TSFE']->fe_user;
-                        $feUser->logoff();
+                        $frontendUser->logoff();
     
                         header('Location: ' . $url);
                         exit;

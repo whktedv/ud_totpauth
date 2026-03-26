@@ -4,7 +4,6 @@ namespace Ud\UdTotpauth\Controller;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Core\Context\Context;
-use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Core\Context\UserAspect;
 use TYPO3\CMS\Core\Session\UserSessionManager;
 use Psr\Http\Message\ResponseInterface;
@@ -59,16 +58,16 @@ class AuthenticationController extends ActionController
             return (new ForwardResponse('verifyTotp'))->withControllerName('Authentication');
         } elseif ($this->settings['action'] == 'emailVerificationRequired') {
             return (new ForwardResponse('emailVerificationRequired'))->withControllerName('Authentication');
-        } else {
-            $feUser = $GLOBALS['TSFE']->fe_user->user;
-            
+        } else {            
+            $feUser = $this->request->getAttribute('frontend.user');
+
             if($feUser != NULL) {
                 
-                $totpSecret = $this->totpSecretRepository->findActiveByFeUserId($feUser['uid']);
+                $totpSecret = $this->totpSecretRepository->findActiveByFeUserId($feUser->user['uid']);
                 
                 if ($totpSecret != null) {
                     // 2FA schon aktiv, über alreadyactive-Seite kann auf 2FA per E-Mail umgestellt werden
-                    return (new ForwardResponse('alreadyactive'))->withControllerName('Authentication')->withArguments(['userId' => $feUser['uid']]); 
+                    return (new ForwardResponse('alreadyactive'))->withControllerName('Authentication')->withArguments(['userId' => $feUser->user['uid']]); 
                 }
                 
                 // Generate a new TOTP secret
@@ -77,7 +76,7 @@ class AuthenticationController extends ActionController
                 // Get QR code URL
                 $qrCodeUrl = $this->totpService->getQrCodeUrl(
                     $secret,
-                    $feUser['username'],
+                    $feUser->user['username'],
                     $this->settings['applicationName']
                     );
                 
@@ -99,8 +98,8 @@ class AuthenticationController extends ActionController
      * @return void
      */
     public function storeSecretAction(string $secret, string $verificationCode): ResponseInterface
-    {
-        $feUser = $GLOBALS['TSFE']->fe_user->user;
+    {        
+        $feUser = $this->request->getAttribute('frontend.user');
         
         // Verify the TOTP code first
         if (!$this->totpService->verifyCode($secret, $verificationCode)) {
@@ -109,7 +108,7 @@ class AuthenticationController extends ActionController
         }
         
         // First check if user already has a TOTP secret
-        $existingSecret = $this->totpSecretRepository->findActiveByFeUserId($feUser['uid']);
+        $existingSecret = $this->totpSecretRepository->findActiveByFeUserId($feUser->user['uid']);
         
         if ($existingSecret !== null) {
             // Update existing secret
@@ -119,7 +118,7 @@ class AuthenticationController extends ActionController
         } else {
             // Create new TOTP secret
             $totpSecret = new TotpSecret();
-            $totpSecret->setFeUser($feUser['uid']);
+            $totpSecret->setFeUser($feUser->user['uid']);
             $totpSecret->setSecret($secret);
             $totpSecret->setIsActive(true);
             $totpSecret->setLastUsedAt(new \DateTime());
@@ -229,7 +228,9 @@ class AuthenticationController extends ActionController
     public function verifyEmailAction(string $token = '', int $user = 0): ResponseInterface
     {   
         // Sicherheitsprüfung: Benutzer-ID aus Session mit Parameter abgleichen
-        $currentUserId = (int)($GLOBALS['TSFE']->fe_user->user['uid'] ?? 0);       
+        
+        $feUser = $this->request->getAttribute('frontend.user');
+        $currentUserId = $feUser->user['uid'] ?? 0;            
         $valid = true;
         
         if ($user === 0 || ($currentUserId > 0 && $currentUserId !== $user)) {
@@ -252,7 +253,8 @@ class AuthenticationController extends ActionController
                 );
 
             // Session löschen und zur Login-Seite umleiten
-            $GLOBALS['TSFE']->fe_user->logoff();
+            //$GLOBALS['TSFE']->fe_user->logoff();
+            $feUser->logoff();
             $valid = false;
         }
         
