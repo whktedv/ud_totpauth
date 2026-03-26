@@ -7,12 +7,12 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'UD',
     'author_email' => 'edv@whkt.de',
     'state' => 'stable',
-    'version' => '1.1.1',
+    'version' => '1.2.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '12.4.0-12.4.99',
-            'extbase' => '12.4.0-12.4.99',
-            'fluid' => '12.4.0-12.4.99',
+            'typo3' => '12.4.0-13.4.99',
+            'extbase' => '12.4.0-13.4.99',
+            'fluid' => '12.4.0-13.4.99',
         ],
         'conflicts' => [],
         'suggests' => [],

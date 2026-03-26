@@ -25,10 +25,10 @@ final class AuthEventListener
         
     
     public function __invoke(LoginConfirmedEvent $event): void
-    {
+    {            
         //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($redirectPid);
         //die;
-            
+
         $configurationManager = GeneralUtility::makeInstance(\TYPO3\CMS\Extbase\Configuration\ConfigurationManager::class);
         $settings = $configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
@@ -63,8 +63,9 @@ final class AuthEventListener
             $redirectPid = (int)$groups[0]['felogin_redirectPid'];
             // Wenn im Gruppendatensatz keine redirectPid gespeichert ist, dann aus dem felogin-Datensatz auslesen
             if($redirectPid == 0){
-                $pageId = (int)($GLOBALS['TSFE']->id);
-                
+                $pageArguments = $this->request->getAttribute('routing');
+                $pageId = $pageArguments->getPageId();
+
                 $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
                 ->getConnectionForTable('tt_content')
                 ->createQueryBuilder();
@@ -90,7 +91,6 @@ final class AuthEventListener
                     }                    
             }
             
-
         if($verifyPageId != 0) {
             $userId = $frontendUser['uid'];
                         
@@ -109,7 +109,6 @@ final class AuthEventListener
                 // Fallback, wenn redirectpid nicht ausgelesen werden kann
                 $_SESSION['original_url'] = GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
             } else {
-     
                 $this->uriBuilder->setRequest($extbaseRequest);
                 $url = $this->uriBuilder
                 ->reset()

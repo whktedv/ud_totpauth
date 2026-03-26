@@ -3,20 +3,18 @@ namespace Ud\UdTotpauth\Controller;
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Core\Context\UserAspect;
-use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Session\UserSessionManager;
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Extbase\Http\ForwardResponse;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 
 use Ud\UdTotpauth\Domain\Model\TotpSecret;
 use Ud\UdTotpauth\Domain\Repository\TotpSecretRepository;
 use Ud\UdTotpauth\Service\TotpService;
 use Ud\UdTotpauth\Service\EmailAuthService;
-
-use Psr\Http\Message\ResponseInterface;
-use TYPO3\CMS\Extbase\Http\ForwardResponse;
-
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 
@@ -45,11 +43,11 @@ class AuthenticationController extends ActionController
     public function __construct(
         TotpSecretRepository $totpSecretRepository,
         TotpService $totpService,
-        EmailAuthService $emailAuthService
+        EmailAuthService $emailAuthService,
     ) {
         $this->totpSecretRepository = $totpSecretRepository;
         $this->totpService = $totpService;
-        $this->emailAuthService = $emailAuthService;
+        $this->emailAuthService = $emailAuthService;        
     }
 
     /**
@@ -106,7 +104,7 @@ class AuthenticationController extends ActionController
         
         // Verify the TOTP code first
         if (!$this->totpService->verifyCode($secret, $verificationCode)) {
-            $this->addFlashMessage('Der Verifizierungscode ist ungültig. Bitte erneut versuchen.', '', \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR);
+            $this->addFlashMessage('Der Verifizierungscode ist ungültig. Bitte erneut versuchen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
             return $this->redirect('showQrCode');
         }
         
@@ -161,7 +159,7 @@ class AuthenticationController extends ActionController
             $totpSecret = $this->totpSecretRepository->findActiveByFeUserId($userId);
             
             if ($totpSecret === null) {
-                $this->addFlashMessage('Kein aktiver TOTP-Account für diesen Benutzer vorhanden, bitte erneut einloggen.', '', \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR);
+                $this->addFlashMessage('Kein aktiver TOTP-Account für diesen Benutzer vorhanden, bitte erneut einloggen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
                 return $this->redirect('verifyTotp');
             }
             
@@ -180,7 +178,7 @@ class AuthenticationController extends ActionController
                 
                 return $this->redirectToUri($loginurl);
             } else {
-                $this->addFlashMessage('Ungültiger Verifizierungscode. Bitte erneut versuchen.', '', \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR);
+                $this->addFlashMessage('Ungültiger Verifizierungscode. Bitte erneut versuchen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
                 return $this->redirect('verifyTotp');
             }
         }
@@ -200,10 +198,10 @@ class AuthenticationController extends ActionController
             
             if($existingSecret != NULL) {
                 $this->totpSecretRepository->remove($existingSecret);
-                $this->addFlashMessage('Beim nächsten Login erfolgt die Zwei-Faktor-Authentifizierung per E-Mail.', '', \TYPO3\CMS\Core\Messaging\AbstractMessage::WARNING);
+                $this->addFlashMessage('Beim nächsten Login erfolgt die Zwei-Faktor-Authentifizierung per E-Mail.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING);
             }            
         } else {
-            $this->addFlashMessage('Zwei-Faktor-Authentifizierung ist schon per Code eingerichtet.', '', \TYPO3\CMS\Core\Messaging\AbstractMessage::WARNING);
+            $this->addFlashMessage('Zwei-Faktor-Authentifizierung ist schon per Code eingerichtet.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING);
         }
                 
         $this->view->assign('isexistingsecret', $existingSecret != NULL);
@@ -238,7 +236,7 @@ class AuthenticationController extends ActionController
             $this->addFlashMessage(
                     'Fehler: Ungültige Anfrage. Bitte melden Sie sich erneut an.',
                     '',
-                    \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
+                    \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR
                 );
             
             $valid = false;
@@ -250,7 +248,7 @@ class AuthenticationController extends ActionController
             $this->addFlashMessage(
                     'Fehler: Der Bestätigungslink ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.',
                     '',
-                    \TYPO3\CMS\Core\Messaging\AbstractMessage::ERROR
+                    \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR
                 );
 
             // Session löschen und zur Login-Seite umleiten
@@ -288,34 +286,53 @@ class AuthenticationController extends ActionController
         return $this->redirectToUri($uri, 0, 303);
     }
     
+    /**
+     * Loggt einen FE-User programmatisch ein und gibt eine Response
+     * mit gesetztem Session-Cookie zurück.
+     * Gibt NULL zurück wenn der User nicht gefunden wurde.
+     */
     protected function logUserIn(int $userId): void
     {
-        // Benutzerdaten aus der Datenbank abrufen
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('fe_users');           
+        // Userdaten aus DB laden
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('fe_users');
         $user = $queryBuilder
             ->select('*')
             ->from('fe_users')
             ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter(intval($userId), \PDO::PARAM_INT))
+                $queryBuilder->expr()->eq(
+                    'uid',
+                    $queryBuilder->createNamedParameter($userId, \PDO::PARAM_INT)
                 )
-                ->execute()
-                ->fetchAssociative();
+            )
+            ->executeQuery()
+            ->fetchAssociative();
 
-        /** @var \TYPO3\CMS\FrontendLogin\Authentication\FrontendUserAuthentication $frontendUser */
-        $frontendUser = $GLOBALS['TSFE']->fe_user;
+        if (!$user) {
+            return;
+        }
+
+        $request = $GLOBALS['TYPO3_REQUEST'];
+        $frontendUser = $request->getAttribute('frontend.user');
+
+        // Anonyme Session in eine fixierte User-Session umwandeln
+        $userSessionManager = UserSessionManager::create('FE');
+        $userSession = $userSessionManager->elevateToFixatedUserSession(
+            $frontendUser->userSession,
+            (int)$user['uid'],
+            false // false = Session-Cookie, true = permanenter Cookie
+        );
+        $frontendUser->userSession        = $userSession;
+        $frontendUser->user               = $user;
+        $frontendUser->enforceNewSessionId();
         
-        // Enforce session so we get a FE cookie. Otherwise autologin might not work :
-        $frontendUser->storeSessionData();
-        $frontendUser->setAndSaveSessionData('login', true);
-        // Login successfull: create user session
-        $sessionRecord = $frontendUser->createUserSession($user);
-        $frontendUser->user = $user;
-        // The login session is started.
-        $frontendUser->loginSessionStarted = true;
-        $frontendUser->createUserAspect();
-        $aspect = GeneralUtility::makeInstance(UserAspect::class, $frontendUser);
+        // Context-Aspect aktualisieren damit isLoggedIn() etc. korrekt funktioniert
         $context = GeneralUtility::makeInstance(Context::class);
-        $context->setAspect('frontend.user', $aspect);
-    }
+        $context->setAspect(
+            'frontend.user',
+            GeneralUtility::makeInstance(UserAspect::class, $frontendUser)
+        );
 
+        return;
+    }
 }

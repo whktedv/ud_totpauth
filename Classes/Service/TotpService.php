@@ -1,8 +1,6 @@
 <?php 
 namespace Ud\UdTotpauth\Service;
 
-use TYPO3\CMS\Core\Core\Environment;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Ud\UdTotpauth\Domain\Repository\TotpSecretRepository;
 
 class TotpService
