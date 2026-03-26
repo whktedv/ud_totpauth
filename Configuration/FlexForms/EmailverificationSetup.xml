@@ -2,29 +2,25 @@
     <sheets>
         <sDEF>
             <ROOT>
-                <TCEforms>
-                    <sheetTitle>Settings</sheetTitle>
-                </TCEforms>
+                <sheetTitle>Settings</sheetTitle>
                 <type>array</type>
                 <el>
                     <settings.emailverify>
-                        <TCEforms>
                             <label>Action to display</label>
                             <config>
                                 <type>select</type>
                                 <renderType>selectSingle</renderType>
-                                <items>
-                                    <numIndex index="0">
-                                        <numIndex index="0">Email Verfication required</numIndex>
-                                        <numIndex index="1">emailVerificationRequired</numIndex>
+                                <items type="array">
+                                    <numIndex index="0" type="array">
+                                        <label>Email Verfication required</label>
+                                        <value>emailVerificationRequired</value>
                                     </numIndex>
-                                    <numIndex index="1">
-                                        <numIndex index="0">Verify Email</numIndex>
-                                        <numIndex index="1">verifyEmail</numIndex>
+                                    <numIndex index="1" type="array">
+                                        <label>Verify Email</label>
+                                        <value>verifyEmail</value>
                                     </numIndex>
                                 </items>
                             </config>
-                        </TCEforms>
                     </settings.emailverify>
                 </el>
             </ROOT>

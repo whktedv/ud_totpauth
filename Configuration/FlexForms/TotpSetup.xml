@@ -2,37 +2,33 @@
     <sheets>
         <sDEF>
             <ROOT>
-                <TCEforms>
-                    <sheetTitle>Settings</sheetTitle>
-                </TCEforms>
+                <sheetTitle>Settings</sheetTitle>
                 <type>array</type>
                 <el>
                     <settings.action>
-                        <TCEforms>
                             <label>Action to display</label>
                             <config>
                                 <type>select</type>
                                 <renderType>selectSingle</renderType>
-                                <items>
-                                    <numIndex index="0">
-                                        <numIndex index="0">Show QR code setup</numIndex>
-                                        <numIndex index="1">showQrCode</numIndex>
+                                <items type="array">
+                                    <numIndex index="0" type="array">
+                                        <label>Show QR code setup</label>
+                                        <value>showQrCode</value>
                                     </numIndex>
-                                    <numIndex index="1">
-                                        <numIndex index="0">Verify TOTP code</numIndex>
-                                        <numIndex index="1">verifyTotp</numIndex>
+                                    <numIndex index="1" type="array">
+                                        <label>Verify TOTP code</label>
+                                        <value>verifyTotp</value>
                                     </numIndex>
-                                    <numIndex index="2">
-                                        <numIndex index="0">Email Verfication required</numIndex>
-                                        <numIndex index="1">emailVerificationRequired</numIndex>
+                                    <numIndex index="2" type="array">
+                                        <label>Email Verfication required</label>
+                                        <value>emailVerificationRequired</value>
                                     </numIndex>
-                                    <numIndex index="3">
-                                        <numIndex index="0">Verify Email</numIndex>
-                                        <numIndex index="1">verifyEmail</numIndex>
+                                    <numIndex index="3" type="array">
+                                        <label>Verify Email</label>
+                                        <value>verifyEmail</value>
                                     </numIndex>
                                 </items>
                             </config>
-                        </TCEforms>
                     </settings.action>
                 </el>
             </ROOT>

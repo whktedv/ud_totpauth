@@ -76,7 +76,7 @@ final class AuthEventListener
                 ->select('pi_flexform')
                 ->from('tt_content')
                 ->where(
-                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageId, \PDO::PARAM_INT)),
+                    $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageId, \Doctrine\DBAL\ParameterType::INTEGER)),
                     $queryBuilder->expr()->eq('CType', $queryBuilder->createNamedParameter('felogin_login')),
                     )
                     ->setMaxResults(1)
