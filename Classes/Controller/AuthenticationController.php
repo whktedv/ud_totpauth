@@ -304,7 +304,7 @@ class AuthenticationController extends ActionController
             ->where(
                 $queryBuilder->expr()->eq(
                     'uid',
-                    $queryBuilder->createNamedParameter($userId, \PDO::PARAM_INT)
+                    $queryBuilder->createNamedParameter($userId, \Doctrine\DBAL\ParameterType::INTEGER)
                 )
             )
             ->executeQuery()
