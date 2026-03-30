@@ -4,24 +4,20 @@ namespace Ud\UdTotpauth\EventListener;
 
 use TYPO3\CMS\FrontendLogin\Event\LoginConfirmedEvent;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use Ud\UdTotpauth\Service\TotpService;
-use Ud\UdTotpauth\Service\EmailAuthService;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
-
-use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
-use TYPO3\CMS\Extbase\Mvc\Request;
-use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
 use Psr\Http\Message\ServerRequestInterface;
-
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Service\FlexFormService;
+use TYPO3\CMS\Core\Site\SiteFinder;
+
+use Ud\UdTotpauth\Service\TotpService;
+use Ud\UdTotpauth\Service\EmailAuthService;
 
 final class AuthEventListener
 {    
     public function __construct(
-        private readonly UriBuilder $uriBuilder,
-        ) {}
-        
+        private readonly SiteFinder $siteFinder,
+    ) {}
     
     public function __invoke(LoginConfirmedEvent $event): void
     {            
@@ -45,11 +41,7 @@ final class AuthEventListener
         $request = $GLOBALS['TYPO3_REQUEST'];
 
         // redirectPid aus Gruppendatensatz des Users auslesen
-        //$frontendUser = $GLOBALS['TSFE']->fe_user->user;
         $frontendUser = $request->getAttribute('frontend.user');
-        
-        //\TYPO3\CMS\Extbase\Utility\DebuggerUtility::var_dump($frontendUser->user);
-        //die;
 
         $groupIds = explode(',', $frontendUser->user['usergroup']);
         $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('fe_groups');
@@ -99,30 +91,24 @@ final class AuthEventListener
             $totpService = GeneralUtility::makeInstance(TotpService::class);
             $emailService = GeneralUtility::makeInstance(EmailAuthService::class);
             
-            $extbaseRequest = new Request(
-                $request->withAttribute('extbase', new ExtbaseRequestParameters())
-                );
-            
             // Speichere die Original-Url in der PHP-Session
             session_start();
             if($redirectPid == 0 || $redirectPid == null) {
                 // Fallback, wenn redirectpid nicht ausgelesen werden kann
                 $_SESSION['original_url'] = GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
             } else {
-                $this->uriBuilder->setRequest($extbaseRequest);
-                $url = $this->uriBuilder
-                ->reset()
-                ->setTargetPageUid($redirectPid)
-                ->setCreateAbsoluteUri(true)
-                ->buildFrontendUri();
-                $_SESSION['original_url'] = $url;
+                $_SESSION['original_url'] = $this->buildPageUrl((int)$redirectPid);
             }
-            
+
             // Check if TOTP is enabled for this user
             if ($totpService->isTotpEnabledForUser($userId)) {
                 // Wenn eine Seiten-ID konfiguriert ist, leite weiter
                 if ($verifyPageId > 0) {
-                    $url = $this->getTypoLinkUrl($verifyPageId, $userId);
+                    $site = $this->siteFinder->getSiteByPageId($verifyPageId);
+                    $url = (string)$site->getRouter()->generateUri(
+                        $verifyPageId,
+                        ['tx_udtotpauth_verification' => ['uid' => $userId]]
+                    );
                     $frontendUser->logoff();
     
                     header('Location: ' . $url);
@@ -142,11 +128,15 @@ final class AuthEventListener
                     $applicationName,
                     $request
                     );
-                
+    
                 if ($emailSent) {
                     // Zur Wartenseite umleiten
                     if (!empty($emailWaitPageId)) {
-                        $url = $this->getTypoLinkUrl($emailWaitPageId, $userId);
+                        $site = $this->siteFinder->getSiteByPageId($emailWaitPageId);
+                        $url = (string)$site->getRouter()->generateUri(
+                            $emailWaitPageId,
+                            ['tx_udtotpauth_verification' => ['uid' => $userId]]
+                        );
     
                         $frontendUser->logoff();
     
@@ -164,20 +154,14 @@ final class AuthEventListener
         }       
     }
     
-    /**
-     * Get a URL from a page ID using typolink
-     *
-     * @param int $pageId
-     * @return string
-     */
-    protected function getTypoLinkUrl(int $pageId, int $userId): string
+    private function buildPageUrl(int $pageId): string
     {
-        $contentObject = GeneralUtility::makeInstance(\TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer::class);
-        return $contentObject->typoLink_URL([
-            'parameter' => $pageId,
-            'additionalParams' => '&tx_udtotpauth_verification[uid]=' . $userId,
-            'forceAbsoluteUrl' => true
-        ]);
+        try {
+            $site = $this->siteFinder->getSiteByPageId($pageId);
+            return (string)$site->getRouter()->generateUri($pageId);
+        } catch (\Exception $e) {
+            return '';
+        }
     }
-        
+    
 }

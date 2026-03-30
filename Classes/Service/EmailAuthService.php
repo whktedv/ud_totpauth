@@ -186,7 +186,7 @@ class EmailAuthService
         $templatePaths = $settings['view']['templateRootPaths'] ?? [];
         // $templatePaths ist jetzt ein Array mit allen gesetzten Pfaden und deren Keys
         
-        $emailview = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(StandaloneView::class);
+        $emailview = GeneralUtility::makeInstance(StandaloneView::class);
         $emailview->setRequest($extbaseRequest);        
         $emailview->setTemplateRootPaths($templatePaths);        
         //$emailview->setTemplatePathAndFilename($templatePathAndFilename);

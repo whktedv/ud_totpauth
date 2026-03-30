@@ -3,9 +3,6 @@ namespace Ud\UdTotpauth\Controller;
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
-use TYPO3\CMS\Core\Context\Context;
-use TYPO3\CMS\Core\Context\UserAspect;
-use TYPO3\CMS\Core\Session\UserSessionManager;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -14,8 +11,8 @@ use Ud\UdTotpauth\Domain\Model\TotpSecret;
 use Ud\UdTotpauth\Domain\Repository\TotpSecretRepository;
 use Ud\UdTotpauth\Service\TotpService;
 use Ud\UdTotpauth\Service\EmailAuthService;
-
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\UserAspect;
 
 class AuthenticationController extends ActionController
 {
@@ -136,54 +133,6 @@ class AuthenticationController extends ActionController
     }
 
     /**
-     * Verify TOTP code
-     *
-     * @param string $totpCode
-     * @return void
-     */
-    public function verifyTotpAction(string $totpCode = ''): ResponseInterface
-    {
-        if($this->request->hasArgument('userId')) {
-            $userId = $this->request->getArgument('userId');
-        } else {
-            $userId = $this->request->getQueryParams()['tx_udtotpauth_verification']['uid'] ?? 0;
-        }
-        
-        // If no code provided, show the verification form
-        if (empty($totpCode)) {
-            $this->view->assign('userId', $userId);
-            return $this->htmlResponse();
-        } else {
-                 
-            $totpSecret = $this->totpSecretRepository->findActiveByFeUserId($userId);
-            
-            if ($totpSecret === null) {
-                $this->addFlashMessage('Kein aktiver TOTP-Account für diesen Benutzer vorhanden, bitte erneut einloggen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
-                return $this->redirect('verifyTotp');
-            }
-            
-            // Verify the code
-            if ($this->totpService->verifyCode($totpSecret->getSecret(), $totpCode)) {
-                // Code is valid, update last used time
-                $totpSecret->setLastUsedAt(new \DateTime());
-                $this->totpSecretRepository->update($totpSecret);
-                
-                $this->logUserIn($userId);
-                
-                session_start();
-                $loginurl = $_SESSION['original_url'] ?? $this->uriBuilder->reset()
-                ->setTargetPageUid($this->settings['loginPageId'])
-                ->build();
-                
-                return $this->redirectToUri($loginurl);
-            } else {
-                $this->addFlashMessage('Ungültiger Verifizierungscode. Bitte erneut versuchen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
-                return $this->redirect('verifyTotp');
-            }
-        }
-    }
-    
-    /**
      * Alreadyactive action
      */
     public function alreadyactiveAction(): ResponseInterface
@@ -219,61 +168,6 @@ class AuthenticationController extends ActionController
     }
     
     /**
-     * Verarbeitet die E-Mail-Bestätigung
-     *
-     * @param string $token
-     * @param int $user
-     * @return void
-     */
-    public function verifyEmailAction(string $token = '', int $user = 0): ResponseInterface
-    {   
-        // Sicherheitsprüfung: Benutzer-ID aus Session mit Parameter abgleichen
-        
-        $feUser = $this->request->getAttribute('frontend.user');
-        $currentUserId = $feUser->user['uid'] ?? 0;            
-        $valid = true;
-        
-        if ($user === 0 || ($currentUserId > 0 && $currentUserId !== $user)) {
-            $this->addFlashMessage(
-                    'Fehler: Ungültige Anfrage. Bitte melden Sie sich erneut an.',
-                    '',
-                    \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR
-                );
-            
-            $valid = false;
-        }
-        // E-Mail-Token validieren
-        $isValid = $this->emailAuthService->validateToken($user, $token);
-        
-        if (!$isValid) {
-            $this->addFlashMessage(
-                    'Fehler: Der Bestätigungslink ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.',
-                    '',
-                    \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR
-                );
-
-            // Session löschen und zur Login-Seite umleiten
-            //$GLOBALS['TSFE']->fe_user->logoff();
-            $feUser->logoff();
-            $valid = false;
-        }
-        
-        if($valid) {
-            $this->logUserIn($user);
-            
-            session_start();
-            $loginurl = $_SESSION['original_url'] ?? $this->uriBuilder->reset()
-            ->setTargetPageUid($this->settings['loginPageId'])
-            ->build();
-        }
-        
-        $this->view->assign('valid', $valid);
-        $this->view->assign('redirecturl', $loginurl ?? '0');
-        return $this->htmlResponse();
-    }
-    
-    
-    /**
      * Switchtomail action
      */
     public function switchtomailAction(): ResponseInterface
@@ -287,15 +181,108 @@ class AuthenticationController extends ActionController
         $uri = $uriBuilder->setTargetPageUid($this->settings['loginPageId'])->build();
         return $this->redirectToUri($uri, 0, 303);
     }
+
+    /**
+     * Verify TOTP code
+     *
+     * @param string $totpCode
+     * @return void
+     */
+    public function verifyTotpAction(string $totpCode = ''): ResponseInterface
+    {
+        if($this->request->hasArgument('userId')) {
+            $userId = $this->request->getArgument('userId');
+        } else {
+            $userId = $this->request->getQueryParams()['tx_udtotpauth_verification']['uid'] ?? 0;
+        }
+        
+        // If no code provided, show the verification form
+        if (empty($totpCode)) {
+            $this->view->assign('userId', $userId);
+            return $this->htmlResponse();
+        } else {
+                 
+            $totpSecret = $this->totpSecretRepository->findActiveByFeUserId($userId);
+            
+            if ($totpSecret === null) {
+                $this->addFlashMessage('Kein aktiver TOTP-Account für diesen Benutzer vorhanden, bitte erneut einloggen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+                return $this->redirect('verifyTotp');
+            }
+            
+            // Verify the code
+            if ($this->totpService->verifyCode($totpSecret->getSecret(), $totpCode)) {
+                // Code is valid, update last used time
+                $totpSecret->setLastUsedAt(new \DateTime());
+                $this->totpSecretRepository->update($totpSecret);
+                
+                $loginResponse = $this->logUserIn($userId);
+                
+                session_start();
+                $loginurl = $_SESSION['original_url'] ?? $this->uriBuilder
+                    ->reset()
+                    ->setTargetPageUid((int)$this->settings['loginPageId'])
+                    ->build();
+
+                $redirectResponse = $this->redirectToUri($loginurl);
+                foreach ($loginResponse?->getHeader('Set-Cookie') ?? [] as $cookieValue) {
+                    $redirectResponse = $redirectResponse->withAddedHeader('Set-Cookie', $cookieValue);
+                }
+
+                return $redirectResponse;                
+            } else {
+                $this->addFlashMessage('Ungültiger Verifizierungscode. Bitte erneut versuchen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+                return $this->redirect('verifyTotp');
+            }
+        }
+    }
     
     /**
-     * Loggt einen FE-User programmatisch ein und gibt eine Response
-     * mit gesetztem Session-Cookie zurück.
-     * Gibt NULL zurück wenn der User nicht gefunden wurde.
+     * Verarbeitet die E-Mail-Bestätigung
+     *
+     * @param string $token
+     * @param int $user
+     * @return void
      */
-    protected function logUserIn(int $userId): void
+    public function verifyEmailAction(string $token = '', int $user = 0): ResponseInterface
     {
-        // Userdaten aus DB laden
+        $feUser = $this->request->getAttribute('frontend.user');
+        $currentUserId = $feUser->user['uid'] ?? 0;
+
+        if ($user === 0 || ($currentUserId > 0 && $currentUserId !== $user)) {
+            $this->addFlashMessage('Fehler: Ungültige Anfrage.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->view->assign('valid', false);
+            $this->view->assign('redirecturl', '0');
+            return $this->htmlResponse();
+        }
+
+        if (!$this->emailAuthService->validateToken($user, $token)) {
+            $this->addFlashMessage('Fehler: Link ungültig oder abgelaufen.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $feUser->logoff();
+            $this->view->assign('valid', false);
+            $this->view->assign('redirecturl', '0');
+            return $this->htmlResponse();
+        }
+
+        $loginResponse = $this->logUserIn($user);
+
+        session_start();
+        $loginurl = $_SESSION['original_url'] ?? $this->uriBuilder
+            ->reset()
+            ->setTargetPageUid((int)$this->settings['loginPageId'])
+            ->build();
+
+        $redirectResponse = $this->redirectToUri($loginurl);
+        foreach ($loginResponse?->getHeader('Set-Cookie') ?? [] as $cookieValue) {
+            $redirectResponse = $redirectResponse->withAddedHeader('Set-Cookie', $cookieValue);
+        }
+
+        return $redirectResponse;
+    }
+    
+    protected function logUserIn(int $userId): ?ResponseInterface
+    {
+        $request = $GLOBALS['TYPO3_REQUEST'];
+
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('fe_users');
         $user = $queryBuilder
@@ -311,30 +298,36 @@ class AuthenticationController extends ActionController
             ->fetchAssociative();
 
         if (!$user) {
-            return;
+            return null;
         }
 
-        $request = $GLOBALS['TYPO3_REQUEST'];
+        /** @var \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication $frontendUser */
         $frontendUser = $request->getAttribute('frontend.user');
 
-        // Anonyme Session in eine fixierte User-Session umwandeln
-        $userSessionManager = UserSessionManager::create('FE');
-        $userSession = $userSessionManager->elevateToFixatedUserSession(
-            $frontendUser->userSession,
-            (int)$user['uid'],
-            false // false = Session-Cookie, true = permanenter Cookie
-        );
-        $frontendUser->userSession        = $userSession;
-        $frontendUser->user               = $user;
-        $frontendUser->enforceNewSessionId();
-        
-        // Context-Aspect aktualisieren damit isLoggedIn() etc. korrekt funktioniert
+        // Session erstellen
+        $frontendUser->createUserSession($user);
+        $frontendUser->user = $user;
+
+        $reflection = new \ReflectionClass($frontendUser);
+
+        // loginSessionStarted setzen
+        $loginProp = $reflection->getProperty('loginSessionStarted');
+        $loginProp->setValue($frontendUser, true);
+
+        // setCookie auf Send setzen – das ist der einzige Wert den appendCookieToResponse() auswertet
+        $setCookieProp = $reflection->getProperty('setCookie');
+        $setCookieProp->setValue($frontendUser, \TYPO3\CMS\Core\Http\SetCookieBehavior::Send);
+
+        // Context aktualisieren
         $context = GeneralUtility::makeInstance(Context::class);
         $context->setAspect(
             'frontend.user',
             GeneralUtility::makeInstance(UserAspect::class, $frontendUser)
         );
 
-        return;
+        $normalizedParams = $request->getAttribute('normalizedParams');
+        $response = $this->responseFactory->createResponse();
+        return $frontendUser->appendCookieToResponse($response, $normalizedParams);
     }
+    
 }
